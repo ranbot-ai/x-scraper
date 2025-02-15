@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "username": "username",
+  "password": "password",
+  "port": 2222,
+  "host": "zproxy.io",
+  "bypass_domains": []
+}
