@@ -1,2 +1,2 @@
-# twitter-scraper
-A NodeJS script that scrapes data from Twitter profiles.
+# x-scraper
+A NodeJS script that scrapes data from X profiles.
