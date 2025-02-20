@@ -29,6 +29,9 @@ const fs = require("fs-extra");
     " --user-data-dir=" + userDataDir,
     " --devtools=" + config.devtools,
     " --single-process",
+    " --no-sandbox",
+    " --disable-setuid-sandbox",
+    " --disable-web-security",
   ];
 
   const headless =

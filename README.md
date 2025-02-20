@@ -26,7 +26,13 @@ A NodeJS script that scrapes data from X profiles.
 ├── LICENSE
 ├── README.md
 ├── config
-│   └── config.json
+│   ├── config.json
+│   ├── cookies.json
+│   ├── zproxy.json
+│   └── zproxy.json.example
+├── log
+│   └── development.log
+├── package-lock.json
 ├── package.json
 ├── src
 │   ├── environment
@@ -35,7 +41,8 @@ A NodeJS script that scrapes data from X profiles.
 │   ├── index.ts
 │   ├── pages
 │   │   ├── identifiers.ts
-│   │   └── index.ts
+│   │   ├── index.ts
+│   │   └── pageParse.ts
 │   └── utils
 │       ├── index.ts
 │       └── scrapedLogger.ts
@@ -44,7 +51,7 @@ A NodeJS script that scrapes data from X profiles.
 │   └── index.d.ts
 └── yarn.lock
 
-7 directories, 14 files
+8 directories, 20 files
 ```
 
 - `build`: The latest generated javascript code.
@@ -72,7 +79,7 @@ npm run start
 
 Starts the app in production by first building the project with `npm run build`, and then executing the compiled JavaScript at `build/index.js`.
 
-## Export your X cookies and save them in
+## Make sure your cookies are saved to
 
 ```
 config/cookies.json
@@ -81,7 +88,24 @@ config/cookies.json
 ## Usage Examples
 
 ```NodeJS
-env HEADLESS=false IDS=deepseek_ai node build/index.js
+┌─────────┬───────┬───────────────────────────────┐
+│ (index) │ tries │          identifier           │
+├─────────┼───────┼───────────────────────────────┤
+│    0    │   0   │ { identifier: 'deepseek_ai' } │
+└─────────┴───────┴───────────────────────────────┘
+>> Queue Size: 1
+{ tries: 0, identifier: { identifier: 'deepseek_ai' } }
+// Cookies loaded successfully.
+// Visiting URL: https://x.com/deepseek_ai
+// Scraped Data: {
+  "name": "DeepSeek",
+  "following": 0,
+  "followers": 906038,
+  "dateCreated": "2023-10-18T09:55:45.000Z",
+  "description": "Unravel the mystery of AGI with curiosity. Answer the essential question with long-termism.",
+  "website": "https://t.co/Un4k2rqn4o",
+  "joinedDate": "October 2023"
+}
 ```
 
 ## Contributors

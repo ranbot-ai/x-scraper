@@ -7,20 +7,10 @@ puppeteer.use(StealthPlugin());
 
 import { config } from "../environment/config";
 import { zproxy } from "../environment/zproxy";
-import { scrapedLogging } from "../utils/scrapedLogger";
+import { scrapeXCompanyInfo } from "./pageParse";
 
 const fs = require("fs");
 const path = require("path");
-
-const wrapperWebProfileInfo = (webProfileInfo: any): any => {
-  let webInfo = webProfileInfo.data.user;
-  if (webInfo) {
-    webInfo.not_found = false;
-    webInfo.data_source = "web_profile_info";
-  }
-
-  return webInfo;
-};
 
 const requeueFailedRequest = async (
   page: any,
@@ -72,48 +62,19 @@ async function scrapeXPublicPage(
     }
 
     // Configure the navigation timeout & Interception request
-    await page.setDefaultNavigationTimeout(config.timeout);
+    // await page.setDefaultNavigationTimeout(config.timeout);
+
+    // Speed up navigation by blocking non-essential resources
     await page.setRequestInterception(true);
-
-    let url: string = config.endpoint + identifier.identifier;
-    let data: any;
-    let domains: string[] = [];
-    let webProfileInfo: any;
-
-    // return JSON response of AJAX response
-    //
-    //  Request URL: https://x.com/i/api/graphql/{ID}/UserByScreenName?variables=%7B%22screen_name%22%3A%22x%22%7D
-    page.on("response", async (response: any) => {
-      const request = response.request();
-      const requestURL = request.url();
-      const headers = response.headers();
-
-      let responseSize = headers["content-length"];
-      if (responseSize === undefined || responseSize === "0") {
-        return;
-      }
-
-      let hostname = new URL(requestURL).hostname;
-      if (!domains.includes(hostname)) {
-        domains.push(hostname);
-      }
-
-      console.error("// GraphQL: ", requestURL);
-
-      if (
-        requestURL.includes("/i/api/graphql/") &&
-        requestURL.includes("UserByScreenName?variables=") &&
-        request.method() === "GET" &&
-        response.status() === 200
-      ) {
-        try {
-          console.error("// Start to parse web profile info ...");
-          webProfileInfo = await response.json();
-        } catch (error: any) {
-          console.error("// Profile response interception error: ", error);
-        }
+    page.on("request", (req: any) => {
+      if (config.ignore_resource_types.includes(req.resourceType())) {
+        req.abort();
+      } else {
+        req.continue();
       }
     });
+
+    let url: string = config.endpoint + identifier.identifier;
 
     if (zproxy.enabled) {
       await page.authenticate({ username, password });
@@ -121,7 +82,13 @@ async function scrapeXPublicPage(
     }
 
     try {
-      await page.goto(url, { waitUntil: "networkidle2" });
+      await page.goto(url, {
+        timeout: config.timeout,
+        waitUntil: "networkidle2",
+      });
+      const companyInfo = await scrapeXCompanyInfo(page);
+
+      console.info(`// Scraped Data: ${JSON.stringify(companyInfo, null, 2)}`);
     } catch (error) {
       console.error("// Error failed to navigate: ", error);
 
@@ -138,40 +105,9 @@ async function scrapeXPublicPage(
       continue;
     }
 
-    const currentURL = await page.evaluate(() =>
-      decodeURIComponent(document.location.href)
-    );
-
-    console.info("// Visiting URL: ", currentURL);
-
-    // Redirect to the login page
-    if (currentURL.match(/accounts\/login\//)) {
-      let messages = [`Identifier: ${identifier.identifier}`].join(", ");
-
-      scrapedLogging(`// ${messages}`);
-      requeueFailedRequest(page, queueItem, queue, identifier);
-
-      continue;
-    }
-
-    // Get raw data from Ajax request URL
-    if (webProfileInfo) {
-      data = wrapperWebProfileInfo(webProfileInfo);
-    } else {
-      // await page.waitForSelector(mainSectionSelector);
-    }
-
-    if (data) {
-      if (data.not_found) {
-        // Delete existing profiles
-      } else {
-        delete data["not_found"]; // Remove key not_found from scraper object
-        // Save new profiles
-      }
-
-      console.log("// X Data: " + JSON.stringify(data, null, 2));
-    }
     await page.close();
+
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Add delay
   }
 
   // Closing browser
