@@ -1,6 +1,9 @@
 import { ICompanyInfo } from "../../types";
 
-async function scrapeXCompanyInfo(page: any): Promise<ICompanyInfo> {
+async function scrapeXCompanyInfo(
+  page: any,
+  companyInfo: ICompanyInfo
+): Promise<ICompanyInfo> {
   const currentURL = await page.evaluate(() =>
     decodeURIComponent(document.location.href)
   );
@@ -14,15 +17,6 @@ async function scrapeXCompanyInfo(page: any): Promise<ICompanyInfo> {
   if (!isLoggedIn) {
     throw new Error("Login failed: Cookies may have expired");
   }
-
-  const companyInfo: ICompanyInfo = {};
-
-  page.on("response", async (response: any) => {
-    if (response.url().includes("/UserByScreenName")) {
-      const data = await response.json();
-      companyInfo.rawData = data;
-    }
-  });
 
   const jsonLdData = await page.evaluate(() => {
     const scripts = Array.from(

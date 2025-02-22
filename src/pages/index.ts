@@ -9,6 +9,8 @@ import { config } from "../environment/config";
 import { zproxy } from "../environment/zproxy";
 import { scrapeXCompanyInfo } from "./pageParse";
 
+import { ICompanyInfo } from "../../types";
+
 const fs = require("fs");
 const path = require("path");
 
@@ -61,6 +63,8 @@ async function scrapeXPublicPage(
       console.log("// No cookies file found.");
     }
 
+    const companyInfo: ICompanyInfo = {};
+
     // Configure the navigation timeout & Interception request
     // await page.setDefaultNavigationTimeout(config.timeout);
 
@@ -71,6 +75,22 @@ async function scrapeXPublicPage(
         req.abort();
       } else {
         req.continue();
+      }
+    });
+
+    // Capture API responses
+    page.on("requestfinished", async (request: any) => {
+      const url = request.url();
+
+      if (url.includes("UserByScreenName")) {
+        try {
+          const response = await request.response();
+          const jsonData = await response.json();
+
+          companyInfo.rawData = jsonData["data"]["user"]["result"];
+        } catch (err) {
+          console.error("// Error parsing response:", err);
+        }
       }
     });
 
@@ -86,7 +106,7 @@ async function scrapeXPublicPage(
         timeout: config.timeout,
         waitUntil: "networkidle2",
       });
-      const companyInfo = await scrapeXCompanyInfo(page);
+      await scrapeXCompanyInfo(page, companyInfo);
 
       console.info(`// Scraped Data: ${JSON.stringify(companyInfo, null, 2)}`);
     } catch (error) {
