@@ -12,6 +12,7 @@ import {
   extractFollowingUsers,
   scrapeFollowingFromDOM,
 } from "./pageParse";
+import { writeOutput } from "../utils/outputWriter";
 
 import { ICompanyInfo } from "../../types";
 
@@ -150,7 +151,8 @@ async function scrapeXPublicPage(
         }
       }
 
-      console.info(`// Scraped Data: ${JSON.stringify(companyInfo, null, 2)}`);
+      const outputPath = writeOutput(identifier.identifier, companyInfo);
+      console.info(`// Scraped Data saved to: ${outputPath}`);
     } catch (error) {
       console.error("// Error failed to navigate: ", error);
 

@@ -48,6 +48,8 @@ SCRAPE_FOLLOWING=true IDS=deepseek_ai npm run start
 │   └── zproxy.json.example
 ├── log
 │   └── development.log
+├── outputs
+│   └── <identifier>.json
 ├── package-lock.json
 ├── package.json
 ├── src
@@ -61,17 +63,19 @@ SCRAPE_FOLLOWING=true IDS=deepseek_ai npm run start
 │   │   └── pageParse.ts
 │   └── utils
 │       ├── index.ts
+│       ├── outputWriter.ts
 │       └── scrapedLogger.ts
 ├── tsconfig.json
 ├── types
 │   └── index.d.ts
 └── yarn.lock
 
-8 directories, 20 files
+9 directories, 22 files
 ```
 
 - `build`: The latest generated javascript code.
 - `config`: Configuration.
+- `outputs`: One JSON file per scraped identifier (e.g. `outputs/OpenAI.json`). Gitignored — generated data only, not committed.
 - `src`: The main coding part of the scraper, written by typescript.
 - `types`: Type or Interface definition.
 

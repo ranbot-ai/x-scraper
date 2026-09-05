@@ -1,6 +1,7 @@
 # ignore folders
 node_modules
 build
+outputs
 
 *.js
 
