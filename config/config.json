@@ -9,5 +9,21 @@
   "ignore_resource_types": ["stylesheet", "media", "font", "manifest"],
   "concurrency": 10,
   "max_tries": 1,
-  "internal_usernames": ["home", "jobs", "messages", "notifications", "explore"]
+  "internal_usernames": [
+    "home",
+    "jobs",
+    "messages",
+    "notifications",
+    "explore",
+    "i",
+    "search",
+    "compose",
+    "settings",
+    "grok",
+    "bookmarks",
+    "communities",
+    "premium",
+    "account"
+  ],
+  "scrape_following": false
 }

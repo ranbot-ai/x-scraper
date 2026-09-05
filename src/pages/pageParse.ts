@@ -1,4 +1,4 @@
-import { ICompanyInfo } from "../../types";
+import { ICompanyInfo, IFollowingUser } from "../../types";
 
 async function scrapeXCompanyInfo(
   page: any,
@@ -119,4 +119,90 @@ async function scrapeXCompanyInfo(
   return companyInfo;
 }
 
-export { scrapeXCompanyInfo };
+// Extracts followed accounts from a "Following" GraphQL response body.
+//
+// X's User result type has migrated away from a flat "legacy" object to a
+// modular schema (core, avatar, profile_bio, relationship_counts). Both
+// shapes are read here, preferring the new one, since the API has been
+// observed to return either depending on rollout.
+function extractFollowingUsers(jsonData: any): IFollowingUser[] {
+  const users: IFollowingUser[] = [];
+
+  const instructions =
+    jsonData?.data?.user?.result?.timeline?.timeline?.instructions || [];
+
+  for (const instruction of instructions) {
+    if (instruction?.type !== "TimelineAddEntries") continue;
+
+    for (const entry of instruction.entries || []) {
+      const userResult = entry?.content?.itemContent?.user_results?.result;
+
+      if (!userResult || userResult.__typename !== "User") continue;
+
+      const legacy = userResult.legacy || {};
+      const core = userResult.core || {};
+      const avatar = userResult.avatar || {};
+      const profileBio = userResult.profile_bio || {};
+      const relationshipCounts = userResult.relationship_counts || {};
+
+      const username = core.screen_name || legacy.screen_name;
+
+      if (!username) continue;
+
+      users.push({
+        username,
+        name: core.name || legacy.name,
+        description: profileBio.description || legacy.description,
+        avatarUrl: avatar.image_url || legacy.profile_image_url_https,
+        verified: userResult.is_blue_verified ?? legacy.verified,
+        followersCount: relationshipCounts.followers ?? legacy.followers_count,
+      });
+    }
+  }
+
+  return users;
+}
+
+// DOM fallback: parses the rendered /following page when the GraphQL
+// response wasn't captured (e.g. request finished before the listener
+// was attached, or the API shape changed).
+async function scrapeFollowingFromDOM(page: any): Promise<IFollowingUser[]> {
+  return await page.evaluate(() => {
+    const cells = Array.from(
+      document.querySelectorAll('[data-testid="UserCell"]')
+    );
+
+    return cells
+      .map((cell: any) => {
+        const link = cell.querySelector('a[role="link"][href^="/"]');
+        const username = link
+          ? link.getAttribute("href").replace(/^\//, "")
+          : undefined;
+
+        const nameSpan = cell.querySelector(
+          'div[dir="ltr"] span span'
+        ) as HTMLElement | null;
+        const name = nameSpan?.textContent?.trim();
+
+        // Exclude the hidden "Click to Follow X" accessibility helper
+        // div (style="display: none") that X renders per cell - it also
+        // matches div[dir="auto"] and would otherwise be picked up as
+        // the bio for accounts that have no description at all.
+        const bioDivs = (
+          Array.from(cell.querySelectorAll('div[dir="auto"]')) as HTMLElement[]
+        ).filter((div) => div.style.display !== "none");
+        const bioDiv = bioDivs[bioDivs.length - 1];
+        const description = bioDiv?.textContent?.trim() || undefined;
+
+        const avatarImg = cell.querySelector("img") as HTMLImageElement | null;
+        const avatarUrl = avatarImg?.src;
+
+        const verified = !!cell.querySelector('[data-testid="icon-verified"]');
+
+        return { username, name, description, avatarUrl, verified };
+      })
+      .filter((user: any) => !!user.username);
+  });
+}
+
+export { scrapeXCompanyInfo, extractFollowingUsers, scrapeFollowingFromDOM };

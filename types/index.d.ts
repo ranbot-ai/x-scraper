@@ -19,6 +19,7 @@ export interface IConfig {
   concurrency: number;
   max_tries: number;
   internal_usernames: string[];
+  scrape_following: boolean;
 }
 
 export interface IZProxy {
@@ -41,6 +42,15 @@ export interface ICookie {
   sameSite?: "Strict" | "Lax" | "None";
 }
 
+export interface IFollowingUser {
+  username: string;
+  name?: string;
+  description?: string;
+  avatarUrl?: string;
+  verified?: boolean;
+  followersCount?: number;
+}
+
 export interface ICompanyInfo {
   name?: string;
   pictureUrl?: string;
@@ -52,5 +62,6 @@ export interface ICompanyInfo {
   location?: string;
   following?: string;
   followers?: string;
+  followingList?: IFollowingUser[];
   rawData?: any;
 }

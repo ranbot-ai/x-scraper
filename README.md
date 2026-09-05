@@ -1,10 +1,26 @@
-# X Scraper | 2025 Active
+# X Scraper | 2026 Activity
 
 A NodeJS script that scrapes data from X public profiles.
 
 ## Configuration
 
 - cp config/zproxy.json.example config/zproxy.json
+- `config/config.json` holds default runtime settings (timeouts, proxy bypass, etc.). Some of these can be overridden per-run via environment variables — see [Environment Variables](#environment-variables) below.
+- `internal_usernames` in `config/config.json` lists x.com's reserved, single-segment routes (`home`, `explore`, `notifications`, `messages`, `jobs`, `i`, `search`, `compose`, `settings`, `grok`, `bookmarks`, `communities`, `premium`, `account`) that are skipped automatically if ever passed in `IDS`, since none of them can be a real profile handle.
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `IDS` | Yes | — | Comma-separated list of X screen names to scrape (e.g. `IDS=deepseek_ai,openai`). |
+| `HEADLESS` | No | `config.headless` (`true`) | Overrides headless mode for the Puppeteer browser (`true`/`false`). |
+| `SCRAPE_FOLLOWING` | No | `config.scrape_following` (`false`) | When `true`, also visits `{identifier}/following` and captures the accounts a profile follows into `followingList`. See [Following List](#following-list) below. |
+
+Environment variables must be set **before** the command on the same line, not passed as a trailing argument, e.g.:
+
+```NodeJS
+SCRAPE_FOLLOWING=true IDS=deepseek_ai npm run start
+```
 
 ## Technology
 
@@ -79,7 +95,7 @@ IDS=deepseek_ai npm run start
 
 Starts the app in production by first building the project with `npm run build`, and then executing the compiled JavaScript at `build/index.js`.
 
-`IDS` is a comma-separated list of X screen names to scrape (e.g. `IDS=deepseek_ai,openai`), read from the environment. It must be set **before** the command on the same line, not passed as a trailing argument.
+See [Environment Variables](#environment-variables) below for `IDS`, `HEADLESS`, and `SCRAPE_FOLLOWING`.
 
 ## Make sure your cookies are saved to
 
@@ -202,6 +218,28 @@ $ IDS=deepseek_ai npm run start
   "description": "Unravel the mystery of AGI with curiosity. Answer the essential question with long-termism.",
   "website": "https://t.co/Un4k2rqn4o",
   "joinedDate": "October 2023"
+}
+```
+
+## Following List
+
+Set `SCRAPE_FOLLOWING=true` to also capture the accounts a profile follows into `followingList`. The scraper first tries to intercept the `Following` GraphQL XHR response; if that request isn't captured (e.g. blocked, or the API shape changed), it falls back to parsing the rendered `/following` page DOM instead. Only the first batch that loads on page visit is captured — there's no scrolling/pagination.
+
+```NodeJS
+$ SCRAPE_FOLLOWING=true IDS=deepseek_ai npm run start
+
+// Scraped Data: {
+  ...
+  "followingList": [
+    {
+      "username": "openai",
+      "name": "OpenAI",
+      "description": "AI research and deployment company.",
+      "avatarUrl": "https://pbs.twimg.com/profile_images/.../avatar_normal.jpg",
+      "verified": true,
+      "followersCount": 4200000
+    }
+  ]
 }
 ```
 

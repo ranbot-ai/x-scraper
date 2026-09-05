@@ -7,7 +7,11 @@ puppeteer.use(StealthPlugin());
 
 import { config } from "../environment/config";
 import { zproxy } from "../environment/zproxy";
-import { scrapeXCompanyInfo } from "./pageParse";
+import {
+  scrapeXCompanyInfo,
+  extractFollowingUsers,
+  scrapeFollowingFromDOM,
+} from "./pageParse";
 
 import { ICompanyInfo } from "../../types";
 
@@ -40,6 +44,11 @@ async function scrapeXPublicPage(
   let username = zproxy.username;
   let password = zproxy.password;
 
+  const scrapeFollowing =
+    process.env.SCRAPE_FOLLOWING != null
+      ? process.env.SCRAPE_FOLLOWING === "true"
+      : config.scrape_following;
+
   // Go through every item in the queue and open page in the browser
   while (queue.length > 0) {
     let queueItem: IQueueItem = queue.shift() as IQueueItem;
@@ -64,6 +73,7 @@ async function scrapeXPublicPage(
     }
 
     const companyInfo: ICompanyInfo = {};
+    let followingCaptured = false;
 
     // Configure the navigation timeout & Interception request
     // await page.setDefaultNavigationTimeout(config.timeout);
@@ -97,6 +107,16 @@ async function scrapeXPublicPage(
         } catch (err) {
           console.error("// Error parsing response:", err);
         }
+      } else if (scrapeFollowing && url.includes("/Following?")) {
+        try {
+          const response = await request.response();
+          const jsonData = await response.json();
+
+          companyInfo.followingList = extractFollowingUsers(jsonData);
+          followingCaptured = true;
+        } catch (err) {
+          console.error("// Error parsing Following response:", err);
+        }
       }
     });
 
@@ -113,6 +133,22 @@ async function scrapeXPublicPage(
         waitUntil: "networkidle2",
       });
       await scrapeXCompanyInfo(page, companyInfo);
+
+      if (scrapeFollowing) {
+        try {
+          const followingUrl = url.replace(/\/?$/, "") + "/following";
+          await page.goto(followingUrl, {
+            timeout: config.timeout,
+            waitUntil: "networkidle2",
+          });
+
+          if (!followingCaptured) {
+            companyInfo.followingList = await scrapeFollowingFromDOM(page);
+          }
+        } catch (err) {
+          console.error("// Error scraping following list: ", err);
+        }
+      }
 
       console.info(`// Scraped Data: ${JSON.stringify(companyInfo, null, 2)}`);
     } catch (error) {
