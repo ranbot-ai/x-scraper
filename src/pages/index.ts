@@ -87,7 +87,13 @@ async function scrapeXPublicPage(
           const response = await request.response();
           const jsonData = await response.json();
 
-          companyInfo.rawData = jsonData["data"]["user"]["result"];
+          if (!jsonData?.data?.user) {
+            console.error(
+              `// Account not found: ${identifier.identifier}`
+            );
+          } else {
+            companyInfo.rawData = jsonData["data"]["user"]["result"];
+          }
         } catch (err) {
           console.error("// Error parsing response:", err);
         }

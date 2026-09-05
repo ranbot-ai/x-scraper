@@ -17,6 +17,11 @@ const fs = require("fs-extra");
   let queue: IQueueItem[] = await scrapeIdentifier();
   console.log(`>> Queue Size: ${queue.length}`);
 
+  if (queue.length === 0) {
+    console.log(">> Scraper exiting...");
+    return;
+  }
+
   // Start browser
   const userDataDir = `/tmp/chrome-user-data-${Math.floor(
     Math.random() * 100000
@@ -51,11 +56,7 @@ const fs = require("fs-extra");
   });
 
   // Start to scrape X identifiers queues
-  if (queue.length === 0) {
-    console.log(">> Scraper exiting...");
-  } else {
-    await scrapeXPublicPage(browser, queue);
-  }
+  await scrapeXPublicPage(browser, queue);
 
   // Delete user data dir
   try {

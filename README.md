@@ -74,10 +74,12 @@ npm run build
 Builds the app at build, cleaning the folder first.
 
 ```NodeJS
-npm run start
+IDS=deepseek_ai npm run start
 ```
 
 Starts the app in production by first building the project with `npm run build`, and then executing the compiled JavaScript at `build/index.js`.
+
+`IDS` is a comma-separated list of X screen names to scrape (e.g. `IDS=deepseek_ai,openai`), read from the environment. It must be set **before** the command on the same line, not passed as a trailing argument.
 
 ## Make sure your cookies are saved to
 
@@ -88,6 +90,8 @@ config/cookies.json
 ## Usage Examples
 
 ```NodeJS
+$ IDS=deepseek_ai npm run start
+
 ┌─────────┬───────┬───────────────────────────────┐
 │ (index) │ tries │          identifier           │
 ├─────────┼───────┼───────────────────────────────┤
